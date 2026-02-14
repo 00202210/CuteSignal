@@ -2,43 +2,18 @@
 title: CuteSignal Docs
 ---
 
-<section class="cs-hero">
-  <p class="cs-eyebrow">Roblox Luau Library</p>
-  <h1>CuteSignal Documentation</h1>
-  <p>Typed, low-allocation signals built for hot paths and predictable runtime behavior.</p>
-  <div class="cs-actions">
-    <a class="cs-btn cs-btn-primary" href="#install">Get Started</a>
-    <a class="cs-btn" href="api.html">API Reference</a>
-    <a class="cs-btn" href="benchmark.html">Benchmarks</a>
-  </div>
-  <div class="cs-kpis">
-    <div class="cs-kpi">
-      <p class="label">Overall Rank</p>
-      <p class="value">#1</p>
-    </div>
-    <div class="cs-kpi">
-      <p class="label">Score</p>
-      <p class="value">906.5</p>
-    </div>
-    <div class="cs-kpi">
-      <p class="label">Coverage</p>
-      <p class="value">100%</p>
-    </div>
-    <div class="cs-kpi">
-      <p class="label">Iteration Count</p>
-      <p class="value">500M/Test</p>
-    </div>
-  </div>
-</section>
+# CuteSignal Documentation
 
-<nav class="cs-pill-nav">
-  <a href="#install">Install</a>
-  <a href="#quick-start">Quick Start</a>
-  <a href="#api-quick-reference">Quick API</a>
-  <a href="#runtime-semantics">Runtime Semantics</a>
-  <a href="api.html">Full API</a>
-  <a href="benchmark.html">Benchmark</a>
-</nav>
+CuteSignal is a typed, allocation-aware signal module for Roblox Luau.
+
+<p>
+  <a href="#install" style="display:inline-block;padding:8px 12px;margin:4px;border:1px solid #2f6f44;border-radius:6px;text-decoration:none;">Install</a>
+  <a href="#quick-start" style="display:inline-block;padding:8px 12px;margin:4px;border:1px solid #2f6f44;border-radius:6px;text-decoration:none;">Quick Start</a>
+  <a href="#api-quick-reference" style="display:inline-block;padding:8px 12px;margin:4px;border:1px solid #2f6f44;border-radius:6px;text-decoration:none;">Quick API</a>
+  <a href="api.html" style="display:inline-block;padding:8px 12px;margin:4px;border:1px solid #2f6f44;border-radius:6px;text-decoration:none;">Full API</a>
+  <a href="#behavior-notes" style="display:inline-block;padding:8px 12px;margin:4px;border:1px solid #2f6f44;border-radius:6px;text-decoration:none;">Behavior Notes</a>
+  <a href="benchmark.html" style="display:inline-block;padding:8px 12px;margin:4px;border:1px solid #2f6f44;border-radius:6px;text-decoration:none;">Benchmark</a>
+</p>
 
 ## Install
 1. Copy `CuteSignal.luau` into your project.
@@ -73,28 +48,11 @@ DamageTaken:Destroy()
 ```
 
 ## Why CuteSignal
-<div class="cs-grid">
-  <article class="cs-card">
-    <h3>Typed payloads</h3>
-    <p>Use generic signal payload types directly in Luau without wrapper boilerplate.</p>
-  </article>
-  <article class="cs-card">
-    <h3>Low allocation pressure</h3>
-    <p>Connection nodes and waiter nodes are pooled to reduce GC churn.</p>
-  </article>
-  <article class="cs-card">
-    <h3>Fast dispatch paths</h3>
-    <p>Optimized no-listener, one-listener, and no-<code>Once</code> hot paths.</p>
-  </article>
-  <article class="cs-card">
-    <h3>Safe during reentry</h3>
-    <p>Disconnects while firing are deferred and compacted when dispatch completes.</p>
-  </article>
-  <article class="cs-card">
-    <h3>RBX signal bridging</h3>
-    <p><code>Signal.wrap()</code> mirrors existing <code>RBXScriptSignal</code> sources.</p>
-  </article>
-</div>
+- Generic Luau typing for signal payloads.
+- Pooled connection and waiter nodes to reduce allocation churn.
+- Fast paths for no listeners, one listener, and no-`Once` dispatch.
+- Safe disconnect handling during reentrant `Fire()` calls.
+- Optional wrapping of existing `RBXScriptSignal`s.
 
 ## Module Surface
 - `Signal.new()` creates a standalone signal.
@@ -129,7 +87,7 @@ Removes all listeners and clears waiters.
 ### `signal:Destroy()`
 Disables the signal permanently and disconnects wrapped RBX connection state.
 
-## Runtime Semantics
+## Behavior Notes
 1. Listener call order is newest-to-oldest.
 2. `Once` listeners are removed before their callback runs.
 3. `Wait` resumes with the exact values from `Fire(...)`.
@@ -162,10 +120,6 @@ Benchmarks were run with **500,000,000 iterations per test**.
 
 Full scenario table: [Benchmark](benchmark.html)
 
-<p class="cs-note"><strong>Note:</strong> benchmark deltas are environment-sensitive. Re-run in your target runtime for absolute comparisons.</p>
-
 ## Other Pages
-<div class="cs-inline-links">
-  <a href="api.html">API Reference</a>
-  <a href="benchmark.html">Benchmark</a>
-</div>
+- [API Reference](api.html)
+- [Benchmark](benchmark.html)
