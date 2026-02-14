@@ -2,39 +2,16 @@
 title: CuteSignal Benchmark
 ---
 
-<section class="cs-hero">
-  <p class="cs-eyebrow">Performance</p>
-  <h1>Benchmark Results</h1>
-  <p>All tests use <strong>500,000,000 iterations per case</strong>. Values are microseconds (<code>us</code>) per iteration, so lower is faster.</p>
-  <div class="cs-actions">
-    <a class="cs-btn cs-btn-primary" href="index.html">Docs Home</a>
-    <a class="cs-btn" href="api.html">API Reference</a>
-  </div>
-  <div class="cs-kpis">
-    <div class="cs-kpi">
-      <p class="label">Overall Rank</p>
-      <p class="value">#1</p>
-    </div>
-    <div class="cs-kpi">
-      <p class="label">Score</p>
-      <p class="value">906.5</p>
-    </div>
-    <div class="cs-kpi">
-      <p class="label">Coverage</p>
-      <p class="value">100%</p>
-    </div>
-    <div class="cs-kpi">
-      <p class="label">Tests</p>
-      <p class="value">21</p>
-    </div>
-  </div>
-</section>
+# Benchmark
 
-<nav class="cs-pill-nav">
-  <a href="#per-test-results">Per-Test Table</a>
-  <a href="#overall-score">Overall Score</a>
-  <a href="#notes">Notes</a>
-</nav>
+Benchmarks were run with **500,000,000 iterations per test**.
+
+Time values are in microseconds (`us`) per iteration. Lower is better.
+
+<p>
+  <a href="index.html" style="display:inline-block;padding:8px 12px;margin:4px;border:1px solid #2f6f44;border-radius:6px;text-decoration:none;">Docs Home</a>
+  <a href="api.html" style="display:inline-block;padding:8px 12px;margin:4px;border:1px solid #2f6f44;border-radius:6px;text-decoration:none;">API</a>
+</p>
 
 ## Per-Test Results
 
@@ -80,5 +57,3 @@ Weighted geometric mean vs best per test (higher is better).
 - Absolute timings depend on hardware, Luau runtime version, and benchmark harness details.
 - Relative rankings are most useful when rerun in your target environment.
 - `CreateAndFire`, `FireManyHandlers`, and `Fire256Handlers` are cases where another implementation can win despite CuteSignal leading overall.
-
-<p class="cs-note"><strong>Recommendation:</strong> use per-test comparisons to evaluate your specific workload, not just the aggregate score.</p>
