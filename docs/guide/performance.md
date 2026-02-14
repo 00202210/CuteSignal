@@ -1,42 +1,22 @@
----
-title: CuteSignal Benchmark
----
+# Performance
 
-<section class="cs-hero">
-  <p class="cs-eyebrow">Performance</p>
-  <h1>Benchmark Results</h1>
-  <p>All tests use <strong>500,000,000 iterations per case</strong>. Values are microseconds (<code>us</code>) per iteration, so lower is faster.</p>
-  <div class="cs-actions">
-    <a class="cs-btn cs-btn-primary" href="index.html">Docs Home</a>
-    <a class="cs-btn" href="api.html">API Reference</a>
-  </div>
-  <div class="cs-kpis">
-    <div class="cs-kpi">
-      <p class="label">Overall Rank</p>
-      <p class="value">#1</p>
-    </div>
-    <div class="cs-kpi">
-      <p class="label">Score</p>
-      <p class="value">906.5</p>
-    </div>
-    <div class="cs-kpi">
-      <p class="label">Coverage</p>
-      <p class="value">100%</p>
-    </div>
-    <div class="cs-kpi">
-      <p class="label">Tests</p>
-      <p class="value">21</p>
-    </div>
-  </div>
-</section>
+`CuteSignal` is built around low allocation pressure and fast dispatch in common signal workloads.
 
-<nav class="cs-pill-nav">
-  <a href="#per-test-results">Per-Test Table</a>
-  <a href="#overall-score">Overall Score</a>
-  <a href="#notes">Notes</a>
-</nav>
+## Implementation focus
 
-## Per-Test Results
+- Recycled connection nodes for lower connect/disconnect churn.
+- Recycled waiter nodes for reduced wait bookkeeping overhead.
+- Specialized dispatch branches for common fire patterns.
+- Deferred cleanup for stable behavior during reentrant fires.
+
+:::info
+Benchmark timings are best used relatively, not as absolute runtime guarantees.
+:::
+
+## Benchmark snapshot
+
+All tests below used **500,000,000 iterations per case**.
+Values are microseconds (`us`) per iteration, so lower is faster.
 
 | Test | CuteSignal | CuterSignal | SkidSignal | BludSignal | NamedSignal | LuauSignal | FastSignal |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -62,7 +42,7 @@ title: CuteSignal Benchmark
 | WaitOnEventWithArgs | 0.637 us | 0.674 us | 0.669 us | 0.664 us | 0.908 us | 1.195 us | 0.988 us |
 | WaitManyAtOnce | 12.665 us | 12.984 us | 13.476 us | 13.587 us | 17.083 us | 17.456 us | 17.845 us |
 
-## Overall Score
+## Overall score
 
 Weighted geometric mean vs best per test (higher is better).
 
@@ -75,10 +55,3 @@ Weighted geometric mean vs best per test (higher is better).
 | 5 | FastSignal | 813.4 | 100.0% |
 | 6 | NamedSignal | 339.1 | 100.0% |
 | 7 | LuauSignal | 286.7 | 100.0% |
-
-## Notes
-- Absolute timings depend on hardware, Luau runtime version, and benchmark harness details.
-- Relative rankings are most useful when rerun in your target environment.
-- `CreateAndFire`, `FireManyHandlers`, and `Fire256Handlers` are cases where another implementation can win despite CuteSignal leading overall.
-
-<p class="cs-note"><strong>Recommendation:</strong> use per-test comparisons to evaluate your specific workload, not just the aggregate score.</p>
