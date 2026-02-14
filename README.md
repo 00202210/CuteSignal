@@ -62,6 +62,6 @@ DamageTaken:Destroy()
 - After `Destroy()`, `Fire`, `DisconnectAll`, and `Destroy` are no-ops.
 
 ## Documentation
-- Docs home: [docs/index.md](https://00202210.github.io/CuteSignal/)
-- API reference: [docs/api.md](https://00202210.github.io/CuteSignal/api.html)
-- Benchmark details: [docs/benchmark.md](https://00202210.github.io/CuteSignal/benchmark.html)
+- Docs home: [Home](https://00202210.github.io/CuteSignal/)
+- API reference: [API](https://00202210.github.io/CuteSignal/api.html)
+- Benchmark details: [Benchmarks](https://00202210.github.io/CuteSignal/benchmark.html)
