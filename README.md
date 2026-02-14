@@ -61,26 +61,7 @@ DamageTaken:Destroy()
 - After `Destroy()`, `Connect`, `Once`, and `Wait` error with `"Signal is destroyed"`.
 - After `Destroy()`, `Fire`, `DisconnectAll`, and `Destroy` are no-ops.
 
-## Benchmark Summary
-Benchmarks were run with **500,000,000 iterations per test**.
-
-### Overall Score
-Weighted geometric mean vs best per test (higher is better).
-
-| Rank | Signal | Score | Coverage |
-| ---: | --- | ---: | ---: |
-| 1 | CuteSignal | 906.5 | 100.0% |
-| 2 | BludSignal | 903.6 | 100.0% |
-| 3 | SkidSignal | 902.3 | 100.0% |
-| 4 | CuterSignal | 889.9 | 100.0% |
-| 5 | FastSignal | 813.4 | 100.0% |
-| 6 | NamedSignal | 339.1 | 100.0% |
-| 7 | LuauSignal | 286.7 | 100.0% |
-
-Full per-test table: [docs/benchmark.md](docs/benchmark.md)
-
 ## Documentation
-- Docs home: [docs/index.md](docs/index.md)
-- API reference: [docs/api.md](docs/api.md)
-- Benchmark details: [docs/benchmark.md](docs/benchmark.md)
-- Hosted docs: https://00202210.github.io/CuteSignal/
+- Docs home: [docs/index.md](https://00202210.github.io/CuteSignal/)
+- API reference: [docs/api.md](https://00202210.github.io/CuteSignal/api.html)
+- Benchmark details: [docs/benchmark.md](https://00202210.github.io/CuteSignal/benchmark.html)
