@@ -2,23 +2,14 @@
 title: CuteSignal API
 ---
 
-<section class="cs-hero">
-  <p class="cs-eyebrow">Reference</p>
-  <h1>API Reference</h1>
-  <p>All signatures and behavior notes below match <code>CuteSignal.luau</code>.</p>
-  <div class="cs-actions">
-    <a class="cs-btn cs-btn-primary" href="index.html">Docs Home</a>
-    <a class="cs-btn" href="benchmark.html">Benchmark</a>
-  </div>
-</section>
+# API Reference
 
-<nav class="cs-pill-nav">
-  <a href="#exported-types">Types</a>
-  <a href="#module-functions">Module</a>
-  <a href="#signal-methods">Signal Methods</a>
-  <a href="#destroyed-state">Destroyed State</a>
-  <a href="#behavioral-details">Behavioral Details</a>
-</nav>
+All signatures below match `CuteSignal.luau`.
+
+<p>
+  <a href="index.html" style="display:inline-block;padding:8px 12px;margin:4px;border:1px solid #2f6f44;border-radius:6px;text-decoration:none;">Docs Home</a>
+  <a href="benchmark.html" style="display:inline-block;padding:8px 12px;margin:4px;border:1px solid #2f6f44;border-radius:6px;text-decoration:none;">Benchmark</a>
+</p>
 
 ## Exported Types
 ```luau
@@ -47,7 +38,7 @@ Creates a signal that forwards events from an `RBXScriptSignal`.
 Notes:
 - The wrapped RBX connection is stored internally.
 - Calling `Destroy()` disconnects that internal RBX connection.
-- Wrapped events are dispatched through CuteSignal's `Fire` path.
+- Wrapped events are dispatched through CuteSignal's `Fire` path, so listener/waiter behavior is identical to `Signal.new()`.
 
 ## Signal Methods
 
@@ -82,17 +73,9 @@ Removes all listeners and clears any waiting coroutines.
 ### `signal:Destroy()`
 Permanently disables the signal and disconnects wrapped RBX connections.
 
-## Destroyed State
-After `Destroy()` is called:
-
-| Method | Behavior |
-| --- | --- |
-| `Connect` | Throws `"Signal is destroyed"` |
-| `Once` | Throws `"Signal is destroyed"` |
-| `Wait` | Throws `"Signal is destroyed"` |
-| `Fire` | No-op |
-| `DisconnectAll` | No-op |
-| `Destroy` | No-op |
+After `Destroy()`:
+- `Connect`, `Once`, and `Wait` error with `"Signal is destroyed"`.
+- `Fire`, `DisconnectAll`, and `Destroy` become no-ops.
 
 ## Connection Method
 
@@ -102,7 +85,4 @@ Disconnects this connection. Safe to call more than once.
 ## Behavioral Details
 - Listener execution order is last-connected, first-called.
 - Waiters resume after listeners when both are present.
-- `DisconnectAll()` clears listeners and waiters without resuming waiters.
 - Callback errors propagate; callbacks are not wrapped in `pcall`.
-
-<p class="cs-note"><strong>Implementation note:</strong> disconnects that happen while firing are deferred until outermost dispatch completes.</p>
