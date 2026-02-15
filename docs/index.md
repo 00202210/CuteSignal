@@ -4,6 +4,9 @@ layout: home
 
 hero:
   text: "A fast and low-allocation pure Luau signal."
+  image:
+    src: /icon.png
+    alt: CuteSignal icon
   actions:
     - theme: brand
       text: Get Started
