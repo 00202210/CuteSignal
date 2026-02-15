@@ -1,23 +1,22 @@
 import { defineConfig } from 'vitepress'
 
-// https://vitepress.dev/reference/site-config
 export default defineConfig({
     title: 'CuteSignal',
     base: '/CuteSignal/',
-    description: 'A pure Luau signal implementation.',
+    description: 'Predictable and low-allocation signals for Luau.',
     themeConfig: {
-        // https://vitepress.dev/reference/default-theme-config
         nav: [
             { text: 'Guide', link: '/guide/what-is-cutesignal' },
-            { text: 'API Reference', link: '/classes/signal' }
+            { text: 'Reference', link: '/classes/signal' },
+            { text: 'Benchmark', link: '/guide/performance' }
         ],
 
         sidebar: {
             '/guide/': [
                 {
-                    text: 'Introduction',
+                    text: 'Guide',
                     items: [
-                        { text: 'What is CuteSignal?', link: '/guide/what-is-cutesignal' },
+                        { text: 'Overview', link: '/guide/what-is-cutesignal' },
                         { text: 'Features', link: '/guide/features' },
                         { text: 'Performance', link: '/guide/performance' }
                     ]
@@ -25,7 +24,7 @@ export default defineConfig({
             ],
             '/classes/': [
                 {
-                    text: 'Classes',
+                    text: 'Reference',
                     items: [
                         { text: 'Signal', link: '/classes/signal' },
                         { text: 'Connection', link: '/classes/connection' }
@@ -36,6 +35,11 @@ export default defineConfig({
 
         socialLinks: [
             { icon: 'github', link: 'https://github.com/00202210/CuteSignal' }
-        ]
+        ],
+
+        footer: {
+            message: 'CuteSignal documentation',
+            copyright: 'MIT License'
+        }
     }
 })

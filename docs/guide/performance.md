@@ -1,19 +1,18 @@
 # Performance
 
-`CuteSignal` is built around low allocation pressure and fast dispatch in common signal workloads.
+`CuteSignal` is tuned for workloads where events fire frequently and listener sets change often.
 
-## Implementation focus
+## What is optimized
 
-- Recycled connection nodes for lower connect/disconnect churn.
-- Recycled waiter nodes for reduced wait bookkeeping overhead.
-- Specialized dispatch branches for common fire patterns.
-- Deferred cleanup for stable behavior during reentrant fires.
+- connection and waiter node reuse
+- reduced branching on common dispatch paths
+- deferred disconnect cleanup during reentrant fires
 
 :::info
-Benchmark timings are best used relatively, not as absolute runtime guarantees.
+Benchmarks are best used for relative comparison. Absolute timings vary by hardware and runtime.
 :::
 
-## Benchmark snapshot
+## Benchmark data
 
 All tests below used **500,000,000 iterations per case**.
 Values are microseconds (`us`) per iteration, so lower is faster.
@@ -42,9 +41,7 @@ Values are microseconds (`us`) per iteration, so lower is faster.
 | WaitOnEventWithArgs | 0.637 us | 0.674 us | 0.669 us | 0.664 us | 0.908 us | 1.195 us | 0.988 us |
 | WaitManyAtOnce | 12.665 us | 12.984 us | 13.476 us | 13.587 us | 17.083 us | 17.456 us | 17.845 us |
 
-## Overall score
-
-Weighted geometric mean vs best per test (higher is better).
+## Overall ranking
 
 | Rank | Signal | Score | Coverage |
 | ---: | --- | ---: | ---: |

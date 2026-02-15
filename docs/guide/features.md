@@ -1,53 +1,32 @@
 # Features
 
-## Connection pooling
+## Runtime characteristics
 
-`CuteSignal` recycles connection nodes after disconnects.
-This helps reduce table churn in connect/disconnect heavy paths.
+### Connection node pooling
 
-```lua
-local Signal = require(path.to.CuteSignal)
-local signal = Signal.new()
+Disconnected listeners are recycled instead of discarded.
+That reduces allocation churn in connect/disconnect-heavy code paths.
 
-for _ = 1, 1000 do
-    local connection = signal:Connect(function() end)
-    connection:Disconnect()
-end
-```
+### Waiter node pooling
 
-## Waiter pooling
+Waiting coroutines are tracked with pooled waiter nodes that are reused after resume.
 
-Waiting coroutines are tracked through pooled waiter nodes.
-After resume, waiter nodes are recycled for future `:Wait` calls.
+### Optimized fire paths
 
-```lua
-local Signal = require(path.to.CuteSignal)
-local signal = Signal.new()
+`CuteSignal` has specialized dispatch branches for:
 
-task.spawn(function()
-    local a, b = signal:Wait()
-    print(a, b)
-end)
+- no listeners and no waiters
+- exactly one listener and no waiters
+- listener iteration when there are no `:Once` listeners
 
-signal:Fire("hello", "world")
-```
+### Reentry-safe cleanup
 
-## Fire-path optimizations
+Disconnects that happen during `:Fire` are deferred and compacted once the outermost dispatch finishes.
+This keeps iteration behavior stable when callbacks mutate signal state.
 
-`CuteSignal` includes specialized `:Fire` paths for common cases:
+## Roblox interoperability
 
-- No listeners and no waiters.
-- One listener and no waiters.
-- Listener iteration when there are no `:Once` listeners.
-
-## Safe mutation during fire
-
-Disconnects that happen while firing are deferred and compacted after the outermost dispatch finishes.
-This keeps callback iteration stable when callbacks mutate listener state.
-
-## RBXScriptSignal wrapping
-
-Use `Signal.wrap` to mirror Roblox events through the same `CuteSignal` API.
+Wrap native Roblox events and consume them through the same API:
 
 ```lua
 local Signal = require(path.to.CuteSignal)
@@ -55,16 +34,16 @@ local Signal = require(path.to.CuteSignal)
 local bindable = Instance.new("BindableEvent")
 local wrapped = Signal.wrap(bindable.Event)
 
-wrapped:Connect(function(message)
-    print("wrapped", message)
+wrapped:Connect(function(msg)
+    print("wrapped", msg)
 end)
 
-bindable:Fire("event")
+bindable:Fire("hello")
 ```
 
-## Destroy contract
+## Lifecycle guarantees
 
-After `:Destroy()`:
+After calling `:Destroy()`:
 
 - `:Connect`, `:Once`, and `:Wait` throw `"Signal is destroyed"`.
 - `:Fire`, `:DisconnectAll`, and `:Destroy` become no-ops.

@@ -1,17 +1,31 @@
 # What is CuteSignal?
 
-`CuteSignal` is a pure Luau signal implementation focused on predictable runtime behavior and low overhead in Roblox workloads.
-It supports the conventional signal API (`:Connect`, `:Once`, `:Wait`, `:Fire`, `:DisconnectAll`, `:Destroy`) plus `Signal.wrap` for bridging `RBXScriptSignal` events.
+`CuteSignal` is a pure Luau signal module designed for predictable behavior under load.
+It keeps the API small, avoids unnecessary allocations, and makes edge-case behavior explicit.
 
-More implementation details are on the next pages.
+## Core API
 
-## API Design
+`CuteSignal` exposes the standard methods most Roblox developers expect:
 
-`CuteSignal` keeps the standard signal/connection shape so it is easy to swap in from other Lua/Luau signal libraries that follow the same conventions.
+- `:Connect`
+- `:Once`
+- `:Wait`
+- `:Fire`
+- `:DisconnectAll`
+- `:Destroy`
 
-Key semantics:
+It also provides `Signal.wrap` to mirror `RBXScriptSignal` sources.
 
-- Listeners run newest-to-oldest.
-- `:Once` listeners disconnect before callback execution.
-- `:Wait` returns the exact arguments passed to `:Fire`.
-- Callback errors propagate to the caller.
+## Behavioral contract
+
+These rules are intentional and stable:
+
+- Listener order is newest-to-oldest.
+- `:Once` listeners disconnect before their callback runs.
+- Waiters resume after listeners when both exist.
+- `:DisconnectAll` clears waiters without resuming them.
+- After `:Destroy()`, connect/once/wait throw `"Signal is destroyed"`, while fire/disconnectAll/destroy are no-ops.
+
+## Why this shape
+
+`CuteSignal` stays close to common signal conventions so migration from other Luau signal implementations is straightforward, while still targeting lower runtime overhead.
