@@ -18,13 +18,13 @@ Benchmarks are shown in microseconds (`us`) where lower is faster.
 
 ![Connect benchmark chart](/benchmarks/connect.svg)
 
-`CuteSignal` ranks **2nd** (`130 us`). It is not the absolute fastest raw connect path in this set, but it keeps enough bookkeeping to make later operations (especially firing and disconnect behavior) more predictable.
+`CuteSignal` ranks **2nd** (`104 us`). It is not the absolute fastest raw connect path in this set, but it keeps enough bookkeeping to make later operations (especially firing and disconnect behavior) more predictable.
 
 ## .new()
 
 ![new benchmark chart](/benchmarks/new.svg)
 
-`CuteSignal` ranks **3rd** (`55 us`). Constructor work is slightly heavier because it sets up internal state used to keep runtime operations efficient after creation.
+`CuteSignal` ranks **3rd** (`47 us`). Constructor work is slightly heavier because it sets up internal state used to keep runtime operations efficient after creation.
 
 ## Overall
 
