@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 285" role="img" aria-labelledby="title desc">
+  <title id="title">new benchmark</title>
+  <desc id="desc">Horizontal benchmark bars for new in microseconds. Signal+ 125, CuteSignal 55, GoodSignal 23, LemonSignal 24. Lower is faster.</desc>
+  <defs>
+    <style>
+      .bg { fill: #121826; }
+      .grid { stroke: #2a334a; stroke-width: 1; opacity: 0.75; }
+      .bar-label { fill: #121826; font: 700 38px "Segoe UI", sans-serif; }
+    </style>
+  </defs>
+  <rect class="bg" width="1600" height="285" rx="8" />
+  <line class="grid" x1="215" y1="0" x2="215" y2="285" />
+  <line class="grid" x1="410" y1="0" x2="410" y2="285" />
+  <line class="grid" x1="605" y1="0" x2="605" y2="285" />
+  <line class="grid" x1="800" y1="0" x2="800" y2="285" />
+  <line class="grid" x1="995" y1="0" x2="995" y2="285" />
+  <line class="grid" x1="1190" y1="0" x2="1190" y2="285" />
+  <line class="grid" x1="1385" y1="0" x2="1385" y2="285" />
+  <line class="grid" x1="1580" y1="0" x2="1580" y2="285" />
+  <rect x="20" y="18" width="1560" height="52" fill="#5f57da" />
+  <rect x="20" y="83" width="670" height="52" fill="#e14f4f" />
+  <rect x="20" y="148" width="375" height="52" fill="#abd754" />
+  <rect x="20" y="213" width="375" height="52" fill="#62d0b8" />
+  <text class="bar-label" x="32" y="55">Signal+: 125 us</text>
+  <text class="bar-label" x="32" y="120">CuteSignal: 47 us</text>
+  <text class="bar-label" x="32" y="185">GoodSignal: 23 us</text>
+  <text class="bar-label" x="32" y="250">LemonSignal: 23 us</text>
+</svg>
