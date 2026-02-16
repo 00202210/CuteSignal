@@ -40,4 +40,4 @@ local Signal = require(path.to.CuteSignal)
 - `Signal.wrap(rbxSignal)` forwards a Roblox event through CuteSignal.
 - `Connection:Disconnect()` is idempotent and safe to call repeatedly.
 
-For full method signatures, open [Signal](/classes/signal).
+For full method signatures, open [Signal Documentation](/classes/signal).
