@@ -1,450 +1,443 @@
 --!strict
 --!native
 
-export type Connection = {
-	Disconnect: (self: Connection) -> (),
+--[[
+	CuteSignal
+	- Sync listeners fire immediately.
+	- Async listeners run through a reusable coroutine runner.
+	- Waiters suspend and resume on the next fire.
+]]
+
+-- Type definitions
+type Callback = (...any) -> ()
+export type Disconnect = () -> ()
+
+type SignalCore = {
+	Fire: (self: Signal, ...any) -> (),
+	Connect: (self: Signal, callback: Callback) -> Disconnect,
+	ConnectAsync: (self: Signal, callback: Callback) -> Disconnect,
+	Wait: (self: Signal) -> ...any,
+	DisconnectAll: (self: Signal) -> (),
+	Destroy: (self: Signal) -> (),
+	Count: (self: Signal) -> number,
 }
 
-export type Signal<T... = ...any> = {
-	Connect: (self: Signal<T...>, callback: (T...) -> ()) -> Connection,
-	Once: (self: Signal<T...>, callback: (T...) -> ()) -> Connection,
-	Wait: (self: Signal<T...>) -> T...,
-	Fire: (self: Signal<T...>, T...) -> (),
-	DisconnectAll: (self: Signal<T...>) -> (),
-	Destroy: (self: Signal<T...>) -> (),
+export type Signal = SignalCore & {
+	Once: (self: Signal, callback: Callback) -> Disconnect,
+	HasConnections: (self: Signal) -> boolean,
+	IsDestroyed: (self: Signal) -> boolean,
 }
 
-local connection_pool_head: any = false
-local wait_pool_head: any = false
+type Slot = {
+	index: number,
+	generation: number,
+}
+
+type FireFn = (self: Signal, ...any) -> ()
+
+-- Localized globals
+local table_create = table.create
+local table_clear = table.clear
 local table_freeze = table.freeze
-local table_clone = table.clone
+local coroutine_create = coroutine.create
+local coroutine_resume = coroutine.resume
 local coroutine_running = coroutine.running
 local coroutine_yield = coroutine.yield
-local coroutine_resume = coroutine.resume
 
-local function RecycleConnectionNode(node: any): ()
-	node._signal = false
-	node._callback = false
-	node._once = false
-	node._index = 0
-	node._next = connection_pool_head
-	connection_pool_head = node
+-- Async callback runner cache.
+-- Reuses one coroutine when async handlers do not yield, reducing allocations.
+local freeAsyncRunnerThread: thread? = nil
+
+local function RunAsyncCallback(callback: Callback, ...): ()
+	local runner = freeAsyncRunnerThread
+	freeAsyncRunnerThread = nil
+	callback(...)
+	freeAsyncRunnerThread = runner
 end
 
-local function DrainPendingFree(signal: any): ()
-	local node = signal._pendingFree
-	if node == false then
-		return
+local function AsyncRunnerLoop(): ()
+	while true do
+		RunAsyncCallback(coroutine_yield())
 	end
-
-	signal._pendingFree = false
-	local pool_head = connection_pool_head
-	while node do
-		local pending_next = node._next
-		node._next = pool_head
-		pool_head = node
-		node = pending_next
-	end
-	connection_pool_head = pool_head
 end
 
-local function RecycleWaitNode(node): ()
-	node.thread = false
-	node.next = wait_pool_head
-	wait_pool_head = node
+local function DispatchAsyncRunner(callback: Callback, ...): ()
+	local runner = freeAsyncRunnerThread
+	if runner == nil then
+		runner = coroutine_create(AsyncRunnerLoop)
+		coroutine_resume(runner :: thread)
+		freeAsyncRunnerThread = runner
+	end
+	coroutine_resume(runner :: thread, callback, ...)
 end
 
-local function AcquireWaitNode(waiting_thread: thread): any
-	local node = wait_pool_head
-	if node ~= false then
-		wait_pool_head = node.next
-		node.thread = waiting_thread
-		return node
-	end
-
-	return {
-		thread = waiting_thread,
-		next = false,
-	}
+-- No-op and destroyed-state handlers.
+-- These keep hot paths branch-light by swapping function references.
+local function NoopFire(_self: Signal, ...): ()
+	return
 end
 
-local function CompactConnections(signal: any): ()
-	local count = signal._count
-	local write_index = 1
-
-	for read_index = 1, count do
-		local node = signal[read_index]
-		if node ~= nil then
-			if write_index ~= read_index then
-				signal[write_index] = node
-				signal[read_index] = nil
-				node._index = write_index
-			end
-			write_index += 1
-		end
-	end
-
-	signal._count = write_index - 1
-	signal._deadCount = 0
+local function NoopDisconnectAll(_self: Signal): ()
+	return
 end
 
-local function DisconnectNode(node: any): ()
-	local signal = node._signal
-	if signal == false then
-		return
-	end
-
-	local index = node._index
-
-	if node._once then
-		signal._onceCount -= 1
-		node._once = false
-	end
-
-	if signal._firingDepth ~= 0 then
-		if signal[index] == node then
-			signal[index] = nil
-			signal._deadCount += 1
-		end
-
-		node._signal = false
-		node._callback = false
-		node._index = 0
-		node._next = signal._pendingFree
-		signal._pendingFree = node
-		return
-	end
-
-	local last_index = signal._count
-	if index ~= last_index then
-		local last_node = signal[last_index]
-		signal[index] = last_node
-		last_node._index = index
-	end
-
-	signal[last_index] = nil
-	signal._count = last_index - 1
-
-	RecycleConnectionNode(node)
+local function NoopDestroy(_self: Signal): ()
+	return
 end
 
-local CONNECTION_TEMPLATE = table_freeze({
-	Disconnect = DisconnectNode,
-	_signal = false,
-	_callback = false,
-	_once = false,
-	_index = 0,
-	_next = false,
+local function ZeroCount(_self: Signal): number
+	return 0
+end
+
+local function DestroyedConnect(_self: Signal, _callback: Callback): never
+	error("Signal is destroyed")
+end
+
+local function DestroyedWait(_self: Signal): never
+	error("Signal is destroyed")
+end
+
+-- Shared methods exposed through the metatable.
+local function SignalOnce(self: Signal, callback: Callback): Disconnect
+	if type(callback) ~= "function" then
+		error("Once expects a function callback")
+	end
+
+	local disconnect = nil :: any
+	disconnect = self:Connect(function(...: any)
+		disconnect()
+		callback(...)
+	end)
+
+	return disconnect
+end
+
+local function SignalHasConnections(self: Signal): boolean
+	return self:Count() ~= 0
+end
+
+local function SignalIsDestroyed(self: Signal): boolean
+	return self.Connect == DestroyedConnect
+end
+
+local SIGNAL_METHODS = table_freeze({
+	Once = SignalOnce,
+	HasConnections = SignalHasConnections,
+	IsDestroyed = SignalIsDestroyed,
 })
 
-local function SignalConnect(self: any, callback: (...any) -> ()): Connection
-	local node = connection_pool_head
-	if node ~= false then
-		connection_pool_head = node._next
-	else
-		node = table_clone(CONNECTION_TEMPLATE)
+local SIGNAL_METATABLE = table_freeze({
+	__index = SIGNAL_METHODS,
+})
+
+-- Signal constructor.
+local function NewSignal(): Signal
+	-- Sync listener state
+	local syncCount = 0
+	local syncGeneration = 1
+	local syncCallbacks = {} :: { [number]: Callback? }
+	local syncSlots = {} :: { [number]: Slot? }
+
+	-- Async listener state
+	local asyncCount = 0
+	local asyncGeneration = 1
+	local asyncCallbacks = {} :: { [number]: Callback? }
+	local asyncSlots = {} :: { [number]: Slot? }
+
+	-- Waiting coroutine state
+	local waitCount = 0
+	local waitThreads = {} :: { [number]: thread? }
+
+	local signal: Signal
+	local syncFire: FireFn = NoopFire
+	local asyncFire: FireFn = NoopFire
+	local baseFire: FireFn = NoopFire
+	local fireWithWait: FireFn
+
+	-- Recomputes the currently active `Fire` implementation.
+	-- Waiters wrap the combined listener fire path when present.
+	local function RebuildFire(): ()
+		local fireNoWait: FireFn
+
+		if asyncCount == 0 then
+			fireNoWait = syncFire
+		elseif syncCount == 0 then
+			fireNoWait = asyncFire
+		else
+			fireNoWait = function(self: Signal, ...: any): ()
+				asyncFire(self, ...)
+				syncFire(self, ...)
+			end
+		end
+
+		baseFire = fireNoWait
+		if waitCount == 0 then
+			signal.Fire = fireNoWait
+		else
+			signal.Fire = fireWithWait
+		end
 	end
-	node._signal = self
-	node._callback = callback
-	node._once = false
 
-	local index = self._count + 1
-	self._count = index
-	node._index = index
-	self[index] = node
-	return node
-end
+	-- Rebuild sync dispatch function using a stable snapshot.
+	local function RebuildSyncFire(): ()
+		local fire: FireFn
 
-local function SignalOnce(self: any, callback: (...any) -> ()): Connection
-	local node = connection_pool_head
-	if node ~= false then
-		connection_pool_head = node._next
-	else
-		node = table_clone(CONNECTION_TEMPLATE)
-	end
-	node._signal = self
-	node._callback = callback
-	node._once = true
+		if syncCount == 0 then
+			fire = NoopFire
+		elseif syncCount == 1 then
+			fire = function(_self: Signal, ...: any): ()
+				(syncCallbacks[1] :: Callback)(...)
+			end
+		else
+			local snapshot = table_create(syncCount) :: { [number]: Callback }
+			local source = syncCount
+			for i = 1, syncCount do
+				-- Newest-first execution order.
+				snapshot[i] = syncCallbacks[source] :: Callback
+				source -= 1
+			end
 
-	local index = self._count + 1
-	self._count = index
-	node._index = index
-	self[index] = node
-	self._onceCount += 1
-	return node
-end
+			local snap = snapshot
+			local n = syncCount
+			fire = function(_self: Signal, ...: any): ()
+				for i = 1, n do
+					(snap[i] :: Callback)(...)
+				end
+			end
+		end
 
-local function SignalWait(self: any): ...any
-	local waiting_thread = coroutine_running() :: thread
-
-	if not self._hasWaiters then
-		self._waitThread = waiting_thread
-		self._hasWaiters = true
-	else
-		local waiter = AcquireWaitNode(waiting_thread)
-		waiter.next = self._waitHead
-		self._waitHead = waiter
+		syncFire = fire
+		RebuildFire()
 	end
 
-	return coroutine_yield()
-end
+	-- Rebuild async dispatch function using a stable snapshot.
+	local function RebuildAsyncFire(): ()
+		local fire: FireFn
 
-local function SignalFire(self: any, ...: any): ()
-	local count = self._count
-	if count == 0 then
-		if not self._hasWaiters then
+		if asyncCount == 0 then
+			fire = NoopFire
+		else
+			local snapshot = table_create(asyncCount) :: { [number]: Callback }
+			local source = asyncCount
+			for i = 1, asyncCount do
+				-- Newest-first execution order.
+				snapshot[i] = asyncCallbacks[source] :: Callback
+				source -= 1
+			end
+
+			local snap = snapshot
+			local n = asyncCount
+			fire = function(_self: Signal, ...: any): ()
+				for i = 1, n do
+					DispatchAsyncRunner(snap[i] :: Callback, ...)
+				end
+			end
+		end
+
+		asyncFire = fire
+		RebuildFire()
+	end
+
+	-- Suspend the current coroutine until the next fire.
+	local function Wait(self: Signal): ...any
+		if self.Connect == DestroyedConnect then
+			error("Signal is destroyed")
+		end
+
+		local thread = coroutine_running()
+		if thread == nil then
+			error("Wait must be called from a running coroutine")
+		end
+
+		local index = waitCount + 1
+		waitCount = index
+		waitThreads[index] = thread
+		if index == 1 then
+			signal.Fire = fireWithWait
+		end
+
+		return coroutine_yield()
+	end
+
+	-- Fire path used while at least one thread is waiting.
+	fireWithWait = function(self: Signal, ...: any): ()
+		local n = waitCount
+		if n == 0 then
+			signal.Fire = baseFire
+			baseFire(self, ...)
 			return
 		end
 
-		local wait_thread = self._waitThread
-		local waiters = self._waitHead
-		self._waitThread = false
-		self._waitHead = false
-		self._hasWaiters = false
+		local snapshot = table_create(n) :: { [number]: thread }
+		for i = 1, n do
+			snapshot[i] = waitThreads[i] :: thread
+			waitThreads[i] = nil
+		end
+		waitCount = 0
 
-		if wait_thread ~= false then
-			coroutine_resume(wait_thread, ...)
+		-- Return to no-wait fast path before listener execution.
+		signal.Fire = baseFire
+		baseFire(self, ...)
+
+		for i = 1, n do
+			coroutine_resume(snapshot[i] :: thread, ...)
+		end
+	end
+
+	-- Register a synchronous callback.
+	local function Connect(_self: Signal, callback: Callback): Disconnect
+		if type(callback) ~= "function" then
+			error("Connect expects a function callback")
 		end
 
-		while waiters do
-			local next_waiter = waiters.next
-			coroutine_resume(waiters.thread :: thread, ...)
-			RecycleWaitNode(waiters)
-			waiters = next_waiter
-		end
+		local index = syncCount + 1
+		syncCount = index
+		syncCallbacks[index] = callback
 
-		return
-	end
+		local slot = {
+			index = index,
+			generation = syncGeneration,
+		}
+		syncSlots[index] = slot
 
-	if count == 1 and self._onceCount == 0 and self._deadCount == 0 and not self._hasWaiters then
-		(self[1]._callback :: (...any) -> ())(...)
-		return
-	end
+		RebuildSyncFire()
 
-	local wait_thread = false
-	local waiters = false
-	if self._hasWaiters then
-		wait_thread = self._waitThread
-		waiters = self._waitHead
-		self._waitThread = false
-		self._waitHead = false
-		self._hasWaiters = false
-	end
-
-	if wait_thread == false and waiters == false and count == 1 and self._deadCount == 0 then
-		local node = self[1]
-		local callback = node._callback
-		if node._once then
-			self[1] = nil
-			self._count = 0
-			self._onceCount = 0
-			RecycleConnectionNode(node)
-		end
-		callback(...)
-		return
-	end
-
-	self._firingDepth += 1
-
-	if self._onceCount == 0 then
-		for index = count, 1, -1 do
-			local node = self[index]
-			if node ~= nil then
-				local callback = node._callback
-				callback(...)
+		return function(): ()
+			if slot.generation ~= syncGeneration then
+				return
 			end
-		end
-	else
-		local once_count = self._onceCount
-		local dead_count = self._deadCount
-		local pending_free = self._pendingFree
 
-		for index = count, 1, -1 do
-			local node = self[index]
-			if node ~= nil then
-				local callback = node._callback
-				if node._once then
-					once_count -= 1
-					self[index] = nil
-					dead_count += 1
+			local removeIndex = slot.index
+			if removeIndex == 0 then
+				return
+			end
 
-					node._signal = false
-					node._callback = false
-					node._once = false
-					node._index = 0
-					node._next = pending_free
-					pending_free = node
+			local last = syncCount
+			if removeIndex ~= last then
+				-- O(1) remove by moving the last callback into the removed slot.
+				syncCallbacks[removeIndex] = syncCallbacks[last]
+				syncCallbacks[last] = nil
+
+				local movedSlot = syncSlots[last]
+				syncSlots[removeIndex] = movedSlot
+				syncSlots[last] = nil
+				if movedSlot ~= nil then
+					movedSlot.index = removeIndex
 				end
-				callback(...)
+			else
+				syncCallbacks[last] = nil
+				syncSlots[last] = nil
 			end
-		end
 
-		self._onceCount = once_count
-		self._deadCount = dead_count
-		self._pendingFree = pending_free
-	end
-
-	local depth = self._firingDepth - 1
-	self._firingDepth = depth
-	if depth == 0 then
-		if self._deadCount ~= 0 then
-			CompactConnections(self)
-		end
-		if self._pendingFree ~= false then
-			DrainPendingFree(self)
+			syncCount = last - 1
+			slot.index = 0
+			RebuildSyncFire()
 		end
 	end
 
-	if wait_thread ~= false then
-		coroutine_resume(wait_thread, ...)
-	end
+	-- Register an asynchronous callback.
+	local function ConnectAsync(_self: Signal, callback: Callback): Disconnect
+		if type(callback) ~= "function" then
+			error("ConnectAsync expects a function callback")
+		end
 
-	while waiters do
-		local next_waiter = waiters.next
-		coroutine_resume(waiters.thread :: thread, ...)
-		RecycleWaitNode(waiters)
-		waiters = next_waiter
-	end
-end
+		local index = asyncCount + 1
+		asyncCount = index
+		asyncCallbacks[index] = callback
 
-local function SignalDisconnectAll(self: any): ()
-	local count = self._count
-	if count ~= 0 then
-		self._onceCount = 0
+		local slot = {
+			index = index,
+			generation = asyncGeneration,
+		}
+		asyncSlots[index] = slot
 
-		if self._firingDepth ~= 0 then
-			local dead_count = self._deadCount
-			local pending_free = self._pendingFree
-			for index = 1, count do
-				local node = self[index]
-				if node ~= nil then
-					self[index] = nil
+		RebuildAsyncFire()
 
-					node._signal = false
-					node._callback = false
-					node._once = false
-					node._index = 0
-					node._next = pending_free
-					pending_free = node
-					dead_count += 1
+		return function(): ()
+			if slot.generation ~= asyncGeneration then
+				return
+			end
+
+			local removeIndex = slot.index
+			if removeIndex == 0 then
+				return
+			end
+
+			local last = asyncCount
+			if removeIndex ~= last then
+				-- O(1) remove by moving the last callback into the removed slot.
+				asyncCallbacks[removeIndex] = asyncCallbacks[last]
+				asyncCallbacks[last] = nil
+
+				local movedSlot = asyncSlots[last]
+				asyncSlots[removeIndex] = movedSlot
+				asyncSlots[last] = nil
+				if movedSlot ~= nil then
+					movedSlot.index = removeIndex
 				end
+			else
+				asyncCallbacks[last] = nil
+				asyncSlots[last] = nil
 			end
-			self._deadCount = dead_count
-			self._pendingFree = pending_free
-		else
-			local pool_head = connection_pool_head
-			for index = 1, count do
-				local node = self[index]
-				if node ~= nil then
-					self[index] = nil
-					node._signal = false
-					node._callback = false
-					node._once = false
-					node._index = 0
-					node._next = pool_head
-					pool_head = node
-				end
-			end
-			connection_pool_head = pool_head
-			self._count = 0
-			self._deadCount = 0
 
-			if self._pendingFree ~= false then
-				DrainPendingFree(self)
-			end
+			asyncCount = last - 1
+			slot.index = 0
+			RebuildAsyncFire()
 		end
 	end
 
-	self._waitThread = false
-	self._hasWaiters = false
-
-	local waiter = self._waitHead
-	if waiter ~= false then
-		self._waitHead = false
-		while waiter do
-			local nextWaiter = waiter.next
-			RecycleWaitNode(waiter)
-			waiter = nextWaiter
+	-- Clear all listeners and waiters, and reset dispatch fast paths.
+	local function DisconnectAll(_self: Signal): ()
+		if syncCount == 0 and asyncCount == 0 and waitCount == 0 then
+			return
 		end
-	end
-end
 
-local function DestroyedConnect(_self: any, _callback: (...any) -> ()): Connection
-	return nil :: any
-end
+		syncGeneration += 1
+		asyncGeneration += 1
+		syncCount = 0
+		asyncCount = 0
+		waitCount = 0
+		table_clear(syncCallbacks)
+		table_clear(syncSlots)
+		table_clear(asyncCallbacks)
+		table_clear(asyncSlots)
+		table_clear(waitThreads)
 
-local function DestroyedOnce(_self: any, _callback: (...any) -> ()): Connection
-	return nil :: any
-end
-
-local function DestroyedWait(_self: any): ...any
-	return nil :: any
-end
-
-local function DestroyedFire(_self: any, ...: any): ()
-	return
-end
-
-local function DestroyedDisconnectAll(_self: any): ()
-	return
-end
-
-local function DestroyedDestroy(_self: any): ()
-	return
-end
-
-local function SignalDestroy(self: any): ()
-	if self.Destroy == DestroyedDestroy then
-		return
+		syncFire = NoopFire
+		asyncFire = NoopFire
+		baseFire = NoopFire
+		signal.Fire = NoopFire
 	end
 
-	self.Connect = DestroyedConnect
-	self.Once = DestroyedOnce
-	self.Wait = DestroyedWait
-	self.Fire = DestroyedFire
-	self.DisconnectAll = DestroyedDisconnectAll
-	self.Destroy = DestroyedDestroy
-
-	local rbx_connection = self._rbxConnection
-	if rbx_connection ~= false then
-		self._rbxConnection = false
-		rbx_connection:Disconnect()
+	-- Permanently disable the signal instance.
+	local function Destroy(self: Signal): ()
+		DisconnectAll(self)
+		signal.Connect = DestroyedConnect
+		signal.ConnectAsync = DestroyedConnect
+		signal.Wait = DestroyedWait
+		signal.DisconnectAll = NoopDisconnectAll
+		signal.Destroy = NoopDestroy
+		signal.Count = ZeroCount
 	end
 
-	SignalDisconnectAll(self)
-end
+	local function Count(_self: Signal): number
+		return syncCount + asyncCount
+	end
 
-local SIGNAL_TEMPLATE = table_freeze({
-	Connect = SignalConnect,
-	Once = SignalOnce,
-	Wait = SignalWait,
-	Fire = SignalFire,
-	DisconnectAll = SignalDisconnectAll,
-	Destroy = SignalDestroy,
-	_count = 0,
-	_deadCount = 0,
-	_onceCount = 0,
-	_firingDepth = 0,
-	_hasWaiters = false,
-	_pendingFree = false,
-	_waitThread = false,
-	_waitHead = false,
-	_rbxConnection = false,
-})
+	signal = {
+		Fire = NoopFire,
+		Connect = Connect,
+		ConnectAsync = ConnectAsync,
+		Wait = Wait,
+		DisconnectAll = DisconnectAll,
+		Destroy = Destroy,
+		Count = Count,
+	} :: Signal
 
-local function NewSignal(): Signal
-	return table_clone(SIGNAL_TEMPLATE) :: any
-end
-
-local function WrapSignal(rbxSignal: RBXScriptSignal): Signal
-	local signal = NewSignal() :: any
-	signal._rbxConnection = rbxSignal:Connect(function(...)
-		SignalFire(signal, ...)
-	end)
-	return signal
+	-- Cast through `any` to satisfy strict typing around metatable extension.
+	return (setmetatable(signal :: Signal, SIGNAL_METATABLE) :: any) :: Signal
 end
 
 return table_freeze({
 	new = NewSignal,
-	wrap = WrapSignal,
 })
