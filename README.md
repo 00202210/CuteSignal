@@ -1,6 +1,6 @@
 # CuteSignal
 
-CuteSignal is a fast, low-allocation signal module for Roblox Luau.
+CuteSignal is a lightweight, fast signal module built for Roblox Luau.
 
 ## Documentation
 
