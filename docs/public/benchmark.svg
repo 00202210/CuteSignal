@@ -1,0 +1,67 @@
+<svg aria-hidden="false" aria-label="Interactive chart" viewBox="0 0 650 400" height="400" width="650" xmlns="http://www.w3.org/2000/svg" style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px;" class="highcharts-root" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <desc aria-hidden="true">Created with Highcharts 10.3.1 - Dark Mode Refined</desc>
+  <rect aria-hidden="true" ry="0" rx="0" height="400" width="650" y="0" x="0" class="highcharts-background" fill="#1e1e26"></rect>
+  
+  <g aria-hidden="true" data-z-index="1" class="highcharts-grid highcharts-xaxis-grid">
+    <path opacity="0.1" d="M 89 140.5 L 640 140.5" stroke="#ffffff" fill="none"></path>
+    <path opacity="0.1" d="M 89 233.5 L 640 233.5" stroke="#ffffff" fill="none"></path>
+    <path opacity="0.1" d="M 89 326.5 L 640 326.5" stroke="#ffffff" fill="none"></path>
+  </g>
+  <g aria-hidden="true" data-z-index="1" class="highcharts-grid highcharts-yaxis-grid">
+    <path opacity="0.1" d="M 149.5 47 L 149.5 326" stroke="#fffff	f" fill="none"></path>
+    <path opacity="0.1" d="M 210.5 47 L 210.5 326" stroke="#ffffff" fill="none"></path>
+    <path opacity="0.1" d="M 272.5 47 L 272.5 326" stroke="#ffffff" fill="none"></path>
+    <path opacity="0.1" d="M 333.5 47 L 333.5 326" stroke="#ffffff" fill="none"></path>
+    <path opacity="0.1" d="M 394.5 47 L 394.5 326" stroke="#ffffff" fill="none"></path>
+    <path opacity="0.1" d="M 455.5 47 L 455.5 326" stroke="#ffffff" fill="none"></path>
+    <path opacity="0.1" d="M 517.5 47 L 517.5 326" stroke="#ffffff" fill="none"></path>
+    <path opacity="0.1" d="M 578.5 47 L 578.5 326" stroke="#ffffff" fill="none"></path>
+  </g>
+
+  <g data-z-index="3" transform="translate(640,326) rotate(90) scale(-1,1)">
+    <rect fill="#22f774" height="7" width="45" y="402.5" x="209.5" rx="2"></rect>
+    <rect fill="#22f774" height="7" width="45" y="80.5" x="116.5" rx="2"></rect>
+    <rect fill="#22f774" height="1" width="45" y="36.5" x="23.5" rx="1"></rect>
+    
+    <rect fill="#f06292" height="1" width="45" y="409.5" x="209.5"></rect>
+    <rect fill="#f06292" height="2" width="45" y="87.5" x="116.5"></rect>
+    <rect fill="#f06292" height="1" width="45" y="37.5" x="23.5"></rect>
+
+    <rect fill="#ff7043" height="13" width="45" y="410.5" x="209.5" rx="2"></rect>
+    <rect fill="#ff7043" height="2" width="45" y="89.5" x="116.5"></rect>
+    <rect fill="#ff7043" height="2" width="45" y="38.5" x="23.5"></rect>
+
+    <rect fill="#cddc39" height="119" width="45" y="423.5" x="209.5" rx="2"></rect>
+    <rect fill="#cddc39" height="459" width="45" y="91.5" x="116.5" rx="2"></rect>
+    <rect fill="#cddc39" height="510" width="45" y="40.5" x="23.5" rx="2"></rect>
+
+    <rect fill="#9575cd" height="7" width="45" y="542.5" x="209.5" rx="2"></rect>
+    <rect fill="#9575cd" height="1" width="45" y="550.5" x="116.5"></rect>
+    <rect fill="#9575cd" height="1" width="45" y="550.5" x="23.5"></rect>
+
+    <rect fill="#4db6ac" height="2" width="45" y="549.5" x="209.5"></rect>
+  </g>
+
+  <text y="30" style="fill: #ffffff; font-size: 18px; font-weight: bold;" text-anchor="middle" x="325">Signal Speed Comparison</text>
+  
+  <g class="highcharts-axis-labels" style="fill: #b0b0b0; font-size: 11px;">
+    <text y="98" text-anchor="end" x="74" fill="#b0b0b0">CuteSignal</text>
+    <text y="191" text-anchor="end" x="74" fill="#b0b0b0">GoodSignal</text>
+    <text y="284" text-anchor="end" x="74" fill="#b0b0b0">LemonSignal</text>
+  </g>
+
+  <g class="highcharts-axis-labels" style="fill: #b0b0b0; font-size: 11px;">
+    <text y="345" x="89" text-anchor="middle" fill="#b0b0b0">0</text>
+    <text y="345" x="333" text-anchor="middle" fill="#b0b0b0">20</text>
+    <text y="345" x="633" text-anchor="middle" fill="#b0b0b0">45</text>
+  </g>
+
+  <g transform="translate(100,365)">
+    <rect width="12" height="12" fill="#4db6ac" rx="2"></rect><text x="18" y="10" fill="#e0e0e0">New</text>
+    <rect x="70" width="12" height="12" fill="#9575cd" rx="2"></rect><text x="88" y="10" fill="#e0e0e0">Connect</text>
+    <rect x="150" width="12" height="12" fill="#cddc39" rx="2"></rect><text x="168" y="10" fill="#e0e0e0">Fire</text>
+    <rect x="200" width="12" height="12" fill="#ff7043" rx="2"></rect><text x="220" y="10" fill="#e0e0e0">Once</text>
+    <rect x="262" width="12" height="12" fill="#f06292" rx="2"></rect><text x="280" y="10" fill="#e0e0e0">Wait</text>
+    <rect x="322" width="12" height="12" fill="#22f774" rx="2"></rect><text x="340" y="10" fill="#e0e0e0">Disconnect</text>
+  </g>
+</svg>
