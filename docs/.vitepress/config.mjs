@@ -26,8 +26,7 @@ export default defineConfig({
                 {
                     text: 'Reference',
                     items: [
-                        { text: 'Signal', link: '/classes/signal' },
-                        { text: 'Connection', link: '/classes/connection' }
+                        { text: 'Signal', link: '/classes/signal' }
                     ]
                 }
             ]

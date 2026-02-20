@@ -5,26 +5,30 @@ It keeps the API small, avoids unnecessary allocations, and makes edge-case beha
 
 ## Core API
 
-`CuteSignal` exposes the standard methods most Roblox developers expect:
+`CuteSignal` exports `Signal.new()` and each signal instance provides:
 
 - `:Connect`
+- `:ConnectAsync`
 - `:Once`
 - `:Wait`
 - `:Fire`
 - `:DisconnectAll`
 - `:Destroy`
-
-It also provides `Signal.wrap` to mirror `RBXScriptSignal` sources.
+- `:Count`
+- `:HasConnections`
+- `:IsDestroyed`
 
 ## Behavioral contract
 
 These rules are intentional and stable:
 
-- Listener order is newest-to-oldest.
+- Listener order is newest-to-oldest for both sync and async listeners.
+- Async listeners are dispatched before sync listeners.
 - `:Once` listeners disconnect before their callback runs.
 - Waiters resume after listeners when both exist.
 - `:DisconnectAll` clears waiters without resuming them.
-- After `:Destroy()`, connect/once/wait throw `"Signal is destroyed"`, while fire/disconnectAll/destroy are no-ops.
+- After `:Destroy()`, `:Connect`, `:ConnectAsync`, and `:Wait` throw `"Signal is destroyed"`.
+- After `:Destroy()`, `:Fire`, `:DisconnectAll`, and `:Destroy` are no-ops.
 
 ## Why this shape
 
