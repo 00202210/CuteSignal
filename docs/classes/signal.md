@@ -6,8 +6,9 @@ outline: deep
 
 ```lua
 type Signal<T... = ...any> = {
-    Connect: (self: Signal<T...>, callback: (T...) -> ()) -> Connection,
-    Once: (self: Signal<T...>, callback: (T...) -> ()) -> Connection,
+    Connect: (self: Signal<T...>, callback: (T...) -> ()) -> () -> (),
+    ConnectAsync: (self: Signal<T...>, callback: (T...) -> ()) -> () -> (),
+    Once: (self: Signal<T...>, callback: (T...) -> ()) -> () -> (),
     Wait: (self: Signal<T...>) -> T...,
     Fire: (self: Signal<T...>, ...: T...) -> (),
     DisconnectAll: (self: Signal<T...>) -> (),
@@ -27,45 +28,43 @@ local Signal = require(path.to.CuteSignal)
 local signal = Signal.new()
 ```
 
-### wrap
-
-Returns a signal instance that fires whenever the provided `RBXScriptSignal` fires.
-
-```lua
-local Signal = require(path.to.CuteSignal)
-
-local bindable = Instance.new("BindableEvent")
-local wrapped = Signal.wrap(bindable.Event)
-
-wrapped:Connect(function(message)
-    print("Wrapped", message)
-end)
-
-bindable:Fire("signal")
----> Wrapped signal
-```
-
 ## Methods
 
 ### Connect
 
-Connects a callback to the signal and returns the [Connection](/classes/connection).
+Connects a callback to the signal and returns the Disconnect function
 
 ```lua
 local Signal = require(path.to.CuteSignal)
 local signal = Signal.new()
 
-local connection = signal:Connect(function(value: number)
+local disconnect = signal:Connect(function(value: number)
     print("value", value)
 end)
 
 signal:Fire(10)
-connection:Disconnect()
+disconnect()
+```
+
+### ConnectAsync
+
+Like [Connect], but callbacks run asynchronously before any synchronous connections.
+
+```lua
+local Signal = require(path.to.CuteSignal)
+local signal = Signal.new()
+
+local disconnect = signal:Connect(function(value: number)
+    print("value", value)
+end)
+
+signal:Fire(10)
+disconnect()
 ```
 
 ### Once
 
-Connects a callback that will disconnect before its first execution.
+Connects a callback that automatically disconnects after its first execution.
 
 ```lua
 local Signal = require(path.to.CuteSignal)
@@ -155,4 +154,4 @@ signal:Destroy()
 - Listener execution order is last-connected, first-called.
 - Waiters resume after listeners when both exist.
 - `DisconnectAll` clears waiters without resuming them.
-- Callback errors propagate; callbacks are not wrapped with `pcall`.
+- Sync callback errors propagate; callbacks are not wrapped with `pcall`.
